@@ -1,0 +1,42 @@
+name: Check Upstream Updates
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check latest upstream versions
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+
+          def get_json(url):
+            req = urllib.request.Request(url, headers={"User-Agent": "needy-features-check"})
+            with urllib.request.urlopen(req, timeout=20) as r:
+              return json.loads(r.read())
+
+          def get_text(url):
+            req = urllib.request.Request(url, headers={"User-Agent": "needy-features-check"})
+            with urllib.request.urlopen(req, timeout=20) as r:
+              return r.read().decode().strip()
+
+          def current(feature):
+            with open(f"src/{feature}/devcontainer-feature.json") as f:
+              return json.load(f)["options"]["version"]["default"]
+
+          checks = [
+            ("claude-code", current("claude-code"), get_text("https://downloads.claude.ai/claude-code-releases/stable")),
+            ("codex", current("codex"), get_json("https://api.github.com/repos/openai/codex/releases/latest")["tag_name"].removeprefix("rust-v")),
+            ("opencode", current("opencode"), get_json("https://api.github.com/repos/anomalyco/opencode/releases/latest")["tag_name"].removeprefix("v")),
+            ("pi", current("pi"), get_json("https://registry.npmjs.org/@earendil-works/pi-coding-agent/latest")["version"]),
+          ]
+          for name, cur, latest in checks:
+            status = "UP-TO-DATE" if cur == latest else f"UPDATE AVAILABLE ({cur} -> {latest})"
+            print(f"{name:12s} current={cur:12s} latest={latest:12s} [{status}]")
+          PY

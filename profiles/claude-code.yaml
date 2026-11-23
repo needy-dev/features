@@ -1,0 +1,43 @@
+# Base profile for Claude Code in a needy actor.
+#
+# Persists ~/.claude via needy sync and bridges ~/.claude.json <-> ~/.claude/.claude.json
+# on start/stop without setting CLAUDE_CONFIG_DIR.
+#
+# To run isolated parallel instances (claude-1, claude-2, ...), create a child
+# profile that extends this file and overrides `files.claude.from` (and `actor.recipe`):
+#
+#   extends: ./claude-code.yaml
+#   files:
+#     claude:
+#       mode: sync
+#       from: "host:~/.local/share/needy/files/claude-1"
+#       to: "actor:~/.claude"
+#       filter:
+#         - "- /debug/**"
+#         - "- /shell-snapshots/**"
+#         - "- /statsig/**"
+#         - "- /todos/**"
+#         - "- /file-history/**"
+#         - "- /downloads/**"
+#         - "- /cache/**"
+#         - "+ **"
+actor:
+  driver: linux-container
+  container:
+    oci_runtime: runc
+  image:
+    pull_policy: if-not-present
+    layers:
+      - feature: ghcr.io/needy-dev/features/claude-code:1
+    hooks:
+      stop:
+        - 'if [ -f "$HOME/.claude.json" ]; then cp -p "$HOME/.claude.json" "$HOME/.claude/.claude.json"; fi'
+  command:
+    - claude
+  network:
+    allow:
+      - "*"
+user:
+  name: agent
+  uid: 1000
+  gid: 1000

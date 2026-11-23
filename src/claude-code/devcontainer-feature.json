@@ -1,0 +1,36 @@
+{
+  "id": "claude-code",
+  "version": "1.0.0",
+  "name": "Claude Code",
+  "description": "Installs Anthropic Claude Code CLI (native binary) and configures needy sync for ~/.claude.",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "2.1.323",
+      "description": "Claude Code release version to install (e.g. 2.1.323)."
+    }
+  },
+  "containerEnv": {
+    "DISABLE_AUTOUPDATER": "1"
+  },
+  "postStartCommand": "if [ -f \"$HOME/.claude/.claude.json\" ] && [ ! -f \"$HOME/.claude.json\" ]; then cp -p \"$HOME/.claude/.claude.json\" \"$HOME/.claude.json\"; fi",
+  "customizations": {
+    "needy": {
+      "files": {
+        "claude": {
+          "path": "~/.claude",
+          "filter": [
+            "- /debug/**",
+            "- /shell-snapshots/**",
+            "- /statsig/**",
+            "- /todos/**",
+            "- /file-history/**",
+            "- /downloads/**",
+            "- /cache/**",
+            "+ **"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+name: Test Features
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - feature: codex
+            verify: "codex --version"
+          - feature: opencode
+            verify: "opencode --version && sqlite3 --version"
+          - feature: pi
+            verify: "pi --version && node --version"
+          - feature: herdr
+            verify: "herdr --version"
+          - feature: claude-code
+            verify: "claude --version"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate devcontainer-feature.json
+        run: |
+          python3 -c 'import json; json.load(open("src/${{ matrix.feature }}/devcontainer-feature.json"))'
+
+      - name: Smoke test install.sh in ubuntu:24.04
+        run: |
+          docker run --rm \
+            -v "$PWD/src/${{ matrix.feature }}:/tmp/feature:ro" \
+            -e _REMOTE_USER=agent \
+            -e _REMOTE_USER_HOME=/home/agent \
+            ubuntu:24.04 \
+            sh -eu -c '
+              useradd -m -u 1000 agent
+              cd /tmp/feature
+              sh ./install.sh
+              su - agent -c "${{ matrix.verify }}"
+            '
