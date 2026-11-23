@@ -40,7 +40,7 @@ jobs:
             -e _REMOTE_USER_HOME=/home/agent \
             ubuntu:24.04 \
             sh -eu -c '
-              useradd -m -u 1000 agent
+              useradd -m agent
               cd /tmp/feature
               sh ./install.sh
               su - agent -c "${{ matrix.verify }}"
